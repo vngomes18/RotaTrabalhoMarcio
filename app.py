@@ -517,10 +517,25 @@ def api_info_algoritmo():
     """Retorna informações sobre o algoritmo Dijkstra e estatísticas do grafo"""
     try:
         if grafo is None:
-            return jsonify({
-                'sucesso': False,
-                'mensagem': 'Sistema não inicializado'
-            })
+            info = {
+                'algoritmo': 'OSRM (fallback sem grafo local)',
+                'complexidade_tempo': 'Serviço externo (OSRM)',
+                'complexidade_espaco': 'Serviço externo (OSRM)',
+                'total_nos': None,
+                'total_arestas': None,
+                'arestas_randomizadas': 0,
+                'randomizacao_ativa': False,
+                'tipo_grafo': 'Remoto (OSRM)',
+                'aplicacao': 'Rotas urbanas em Maricá, RJ',
+                'idioma': 'Português (Brasil)',
+                'caracteristicas': [
+                    'Fallback usando OSRM público',
+                    'Sem estatísticas de grafo local',
+                    'Passo-a-passo disponível via OSRM',
+                    'Visualização via Leaflet'
+                ]
+            }
+            return jsonify({'sucesso': True, 'info': info})
         
         # Calcular estatísticas do grafo
         total_nos = len(grafo.nodes())
@@ -773,7 +788,16 @@ def api_grafo_visual():
         destino_lat = float(destino_lat)
         destino_lng = float(destino_lng)
         if grafo is None:
-            return jsonify({'sucesso': False, 'mensagem': 'Grafo não inicializado'})
+            fig, ax = plt.subplots(figsize=(6, 4), dpi=120)
+            ax.text(0.5, 0.5, 'Visualização indisponível sem grafo\nUsando OSRM para rotas',
+                    ha='center', va='center', fontsize=12)
+            ax.axis('off')
+            buf = io.BytesIO()
+            fig.tight_layout()
+            fig.savefig(buf, format='png')
+            plt.close(fig)
+            buf.seek(0)
+            return send_file(buf, mimetype='image/png')
         def nearest_node(lat, lng):
             try:
                 if grafo_proj is not None:
