@@ -973,12 +973,51 @@ function mostrarInfoAlgoritmo() {
         .then(response => response.json())
         .then(data => {
             if (!data.sucesso) {
+                const info = {
+                    algoritmo: 'OSRM (fallback sem grafo local)',
+                    complexidade_tempo: 'Serviço externo (OSRM)',
+                    complexidade_espaco: 'Serviço externo (OSRM)',
+                    tipo_grafo: 'Remoto (OSRM)',
+                    aplicacao: 'Rotas urbanas em Maricá, RJ',
+                    total_nos: '-',
+                    total_arestas: '-',
+                    arestas_randomizadas: 0,
+                    randomizacao_ativa: false,
+                    caracteristicas: [
+                        'Fallback usando OSRM público',
+                        'Sem estatísticas de grafo local',
+                        'Passo-a-passo disponível via OSRM',
+                        'Visualização via Leaflet'
+                    ]
+                };
                 modalBody.innerHTML = `
-                    <div class="alert alert-danger">
-                        <h6><i class="fas fa-exclamation-triangle"></i> Erro</h6>
-                        <p>${data.mensagem || 'Não foi possível carregar as informações do algoritmo.'}</p>
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-info-circle"></i> Modo OSRM</h6>
+                        <p>${data.mensagem || 'Grafo local indisponível. Mostrando informações do modo OSRM.'}</p>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card"><div class="card-body">
+                                <h6 class="card-title"><i class="fas fa-cogs"></i> Algoritmo</h6>
+                                <p class="mb-1"><strong>${info.algoritmo}</strong></p>
+                                <p class="mb-1"><strong>Complexidade Temporal:</strong> ${info.complexidade_tempo}</p>
+                                <p class="mb-1"><strong>Complexidade Espacial:</strong> ${info.complexidade_espaco}</p>
+                                <p class="mb-1"><strong>Tipo de Grafo:</strong> ${info.tipo_grafo}</p>
+                                <p class="mb-0"><strong>Aplicação:</strong> ${info.aplicacao}</p>
+                            </div></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card"><div class="card-body">
+                                <h6 class="card-title"><i class="fas fa-chart-bar"></i> Estatísticas</h6>
+                                <p class="mb-1"><strong>Total de Nós:</strong> ${info.total_nos}</p>
+                                <p class="mb-1"><strong>Total de Arestas:</strong> ${info.total_arestas}</p>
+                                <p class="mb-1"><strong>Arestas Randomizadas:</strong> ${info.arestas_randomizadas}</p>
+                                <p class="mb-0"><strong>Randomização Ativa:</strong> ${info.randomizacao_ativa ? '✅ Sim' : '❌ Não'}</p>
+                            </div></div>
+                        </div>
                     </div>
                 `;
+                carregarImagemGrafo();
                 return;
             }
             const info = data.info;
@@ -1045,13 +1084,51 @@ function mostrarInfoAlgoritmo() {
             carregarImagemGrafo();
         })
         .catch(error => {
-            console.error('Erro ao buscar informações do algoritmo:', error);
+            const info = {
+                algoritmo: 'OSRM (fallback sem grafo local)',
+                complexidade_tempo: 'Serviço externo (OSRM)',
+                complexidade_espaco: 'Serviço externo (OSRM)',
+                tipo_grafo: 'Remoto (OSRM)',
+                aplicacao: 'Rotas urbanas em Maricá, RJ',
+                total_nos: '-',
+                total_arestas: '-',
+                arestas_randomizadas: 0,
+                randomizacao_ativa: false,
+                caracteristicas: [
+                    'Fallback usando OSRM público',
+                    'Sem estatísticas de grafo local',
+                    'Passo-a-passo disponível via OSRM',
+                    'Visualização via Leaflet'
+                ]
+            };
             modalBody.innerHTML = `
-                <div class="alert alert-danger">
-                    <h6><i class="fas fa-exclamation-triangle"></i> Erro de Conexão</h6>
-                    <p>Não foi possível conectar ao servidor para obter as informações.</p>
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-info-circle"></i> Modo OSRM</h6>
+                    <p>Grafo local indisponível. Mostrando informações do modo OSRM.</p>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card"><div class="card-body">
+                            <h6 class="card-title"><i class="fas fa-cogs"></i> Algoritmo</h6>
+                            <p class="mb-1"><strong>${info.algoritmo}</strong></p>
+                            <p class="mb-1"><strong>Complexidade Temporal:</strong> ${info.complexidade_tempo}</p>
+                            <p class="mb-1"><strong>Complexidade Espacial:</strong> ${info.complexidade_espaco}</p>
+                            <p class="mb-1"><strong>Tipo de Grafo:</strong> ${info.tipo_grafo}</p>
+                            <p class="mb-0"><strong>Aplicação:</strong> ${info.aplicacao}</p>
+                        </div></div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card"><div class="card-body">
+                            <h6 class="card-title"><i class="fas fa-chart-bar"></i> Estatísticas</h6>
+                            <p class="mb-1"><strong>Total de Nós:</strong> ${info.total_nos}</p>
+                            <p class="mb-1"><strong>Total de Arestas:</strong> ${info.total_arestas}</p>
+                            <p class="mb-1"><strong>Arestas Randomizadas:</strong> ${info.arestas_randomizadas}</p>
+                            <p class="mb-0"><strong>Randomização Ativa:</strong> ${info.randomizacao_ativa ? '✅ Sim' : '❌ Não'}</p>
+                        </div></div>
+                    </div>
                 </div>
             `;
+            carregarImagemGrafo();
         });
 }
 
