@@ -16,3 +16,7 @@ services:
         value: 0.05
       - key: INIT_GRAPH_ON_START
         value: false
+      - key: GRAPH_MODE
+        value: graphml
+      - key: GRAPHML_FILE
+        value: /opt/render/project/src/data/marica_drive.graphml
