@@ -75,11 +75,13 @@ def inicializar_sistema():
         print(f"❌ Erro ao carregar Maricá: {e}")
         return False
 
+INIT_GRAPH_ON_START = os.environ.get('INIT_GRAPH_ON_START', 'false').lower() == 'true'
+
 @app.before_request
 def _lazy_init():
     try:
         global grafo
-        if grafo is None and not getattr(app, '_init_attempted', False):
+        if INIT_GRAPH_ON_START and grafo is None and not getattr(app, '_init_attempted', False):
             app._init_attempted = True
             ok = inicializar_sistema()
             if not ok:
@@ -285,6 +287,23 @@ class GraphRouter:
 def calcular_rota_entre_pontos(origem_lat, origem_lng, destino_lat, destino_lng, modo='driving'):
     """Calcula rota entre dois pontos usando Dijkstra"""
     try:
+        if grafo is None:
+            profile = 'driving' if modo == 'driving' else ('walking' if modo == 'walking' else 'cycling')
+            waypoints = [(origem_lat, origem_lng), (destino_lat, destino_lng)]
+            res = chamar_osrm_route(profile, waypoints)
+            if not res.get('sucesso'):
+                return {'sucesso': False, 'erro': res.get('mensagem', 'Falha OSRM')}
+            geom = res.get('geometry_geojson') or {}
+            coords = geom.get('coordinates') or []
+            caminho = [[latlng[1], latlng[0]] for latlng in coords if isinstance(latlng, (list, tuple)) and len(latlng) >= 2]
+            return {
+                'sucesso': True,
+                'caminho': caminho,
+                'distancia': res.get('distance_m') or 0.0,
+                'nos_count': len(caminho),
+                'modo': modo
+            }
+
         # Encontrar nós mais próximos das coordenadas (com projeção quando disponível)
         origem_no = None
         destino_no = None
@@ -428,7 +447,31 @@ def api_calcular_rota():
                 'mensagem': 'Coordenadas incompletas'
             })
         
-        # Calcular rota, suportando paradas intermediárias
+        # Se grafo não estiver inicializado, usar OSRM diretamente com paradas
+        if grafo is None:
+            profile = 'driving' if modo == 'driving' else ('walking' if modo == 'walking' else 'cycling')
+            wps = [(float(origem_lat), float(origem_lng))]
+            for p in paradas:
+                try:
+                    wps.append((float(p.get('lat')), float(p.get('lng'))))
+                except Exception:
+                    continue
+            wps.append((float(destino_lat), float(destino_lng)))
+            res = chamar_osrm_route(profile, wps, include_steps=False)
+            if not res.get('sucesso'):
+                return jsonify({'sucesso': False, 'mensagem': res.get('mensagem', 'Falha OSRM')})
+            geom = res.get('geometry_geojson') or {}
+            coords = geom.get('coordinates') or []
+            caminho = [[latlng[1], latlng[0]] for latlng in coords if isinstance(latlng, (list, tuple)) and len(latlng) >= 2]
+            return jsonify({
+                'sucesso': True,
+                'caminho': caminho,
+                'distancia': res.get('distance_m') or 0.0,
+                'nos_count': len(caminho),
+                'modo': modo
+            })
+
+        # Calcular rota com grafo, suportando paradas intermediárias
         pontos = [{'lat': float(origem_lat), 'lng': float(origem_lng)}]
         for p in paradas:
             try:
