@@ -35,6 +35,7 @@ import matplotlib.pyplot as plt
 import random
 import urllib.request
 import urllib.error
+import threading
 
 # Diretórios de templates e estáticos relativos ao arquivo atual
 base_dir = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
@@ -61,9 +62,23 @@ def inicializar_sistema():
     try:
         print("📍 Carregando dados de Maricá...")
         ox.settings.log_console = False
-        # Carregar grafo completo que inclui caminhos pedestres
-        grafo = ox.graph_from_place(cidade_atual, network_type='all')
-        grafo_proj = ox.project_graph(grafo)
+        mode = os.environ.get('GRAPH_MODE', 'osrm').lower()
+        if mode == 'graphml':
+            graphml_file = os.environ.get('GRAPHML_FILE') or os.path.join(base_dir, 'data', 'marica_drive.graphml')
+            if not os.path.exists(graphml_file):
+                url = os.environ.get('GRAPHML_URL')
+                if url:
+                    os.makedirs(os.path.dirname(graphml_file), exist_ok=True)
+                    urllib.request.urlretrieve(url, graphml_file)
+            grafo = ox.load_graphml(graphml_file)
+            grafo_proj = ox.project_graph(grafo)
+        elif mode == 'osm':
+            place = os.environ.get('OSM_PLACE', cidade_atual)
+            net = os.environ.get('OSM_NETWORK', 'drive')
+            grafo = ox.graph_from_place(place, network_type=net)
+            grafo_proj = ox.project_graph(grafo)
+        else:
+            return True
         
         randomizar_pesos_grafo(grafo)
         proporcao = float(os.environ.get('RANDOMIZAR_ARESTAS_PROP', '0.05'))
@@ -81,7 +96,8 @@ INIT_GRAPH_ON_START = os.environ.get('INIT_GRAPH_ON_START', 'false').lower() == 
 def _lazy_init():
     try:
         global grafo
-        if INIT_GRAPH_ON_START and grafo is None and not getattr(app, '_init_attempted', False):
+        mode = os.environ.get('GRAPH_MODE', 'osrm').lower()
+        if grafo is None and not getattr(app, '_init_attempted', False) and mode != 'osrm':
             app._init_attempted = True
             ok = inicializar_sistema()
             if not ok:
@@ -923,3 +939,16 @@ def health():
         return jsonify(estado), 200
     except Exception:
         return jsonify({'ok': False}), 200
+
+@app.route('/api/init_graph', methods=['POST'])
+def api_init_graph():
+    try:
+        if grafo is not None:
+            return jsonify({'sucesso': True, 'mensagem': 'Grafo já inicializado'})
+        def do_init():
+            inicializar_sistema()
+        t = threading.Thread(target=do_init, daemon=True)
+        t.start()
+        return jsonify({'sucesso': True, 'mensagem': 'Inicialização iniciada'}), 202
+    except Exception as e:
+        return jsonify({'sucesso': False, 'mensagem': str(e)}), 200
