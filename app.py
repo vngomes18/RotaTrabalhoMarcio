@@ -75,6 +75,14 @@ def inicializar_sistema():
         print(f"❌ Erro ao carregar Maricá: {e}")
         return False
 
+@app.before_first_request
+def _init_on_first_request():
+    try:
+        if grafo is None:
+            inicializar_sistema()
+    except Exception:
+        pass
+
 def randomizar_pesos_grafo(grafo):
     """Aplica randomização nos pesos das arestas conforme requisitos acadêmicos"""
     print("🔢 Aplicando randomização nos pesos das arestas...")
@@ -833,3 +841,14 @@ if __name__ == '__main__':
         app.run(debug=True, host='0.0.0.0', port=5000)
     else:
         print("❌ Não foi possível inicializar o sistema")
+@app.route('/health')
+def health():
+    try:
+        estado = {
+            'ok': True,
+            'grafo_inicializado': grafo is not None,
+            'cidade': cidade_atual
+        }
+        return jsonify(estado), 200
+    except Exception:
+        return jsonify({'ok': False}), 200
