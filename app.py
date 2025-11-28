@@ -75,13 +75,17 @@ def inicializar_sistema():
         print(f"❌ Erro ao carregar Maricá: {e}")
         return False
 
-@app.before_first_request
-def _init_on_first_request():
+@app.before_request
+def _lazy_init():
     try:
-        if grafo is None:
-            inicializar_sistema()
+        global grafo
+        if grafo is None and not getattr(app, '_init_attempted', False):
+            app._init_attempted = True
+            ok = inicializar_sistema()
+            if not ok:
+                app._init_attempted = False
     except Exception:
-        pass
+        app._init_attempted = False
 
 def randomizar_pesos_grafo(grafo):
     """Aplica randomização nos pesos das arestas conforme requisitos acadêmicos"""
