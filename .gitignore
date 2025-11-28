@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.Python
+env/
+venv/
+.venv/
+.env
+.DS_Store
+
+# Cache e arquivos gerados
+cache/
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Build
+dist/
+build/
+
+# Flask
+instance/
+
